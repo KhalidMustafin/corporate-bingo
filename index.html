@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Корпоративное Bingo · Мустафин.tech</title>
+  <meta property="og:title" content="Корпоративное Bingo · Мустафин.tech">
+  <meta property="og:description" content="Играй в бинго на митинге. Яндекс, Авито, универсальный режим.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f4f0; --surface: #ffffff; --surface2: #f0ede8;
+      --text: #1a1a1a; --text2: #888;
+      --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+      --marked: #1a1a1a; --bingo: #E24B4A; --radius: 8px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #161614; --surface: #222220; --surface2: #2a2a28;
+        --text: #f0ede8; --text2: #888;
+        --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+        --marked: #f0ede8;
+      }
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Space Mono', monospace; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem 4rem; }
+    #app { width: 100%; max-width: 560px; }
+    .top-bar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
+    .title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 900; color: var(--text); letter-spacing: -0.5px; line-height: 1.1; }
+    .subtitle { font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+    .subtitle a { color: var(--text2); text-decoration: none; }
+    .subtitle a:hover { color: var(--text); }
+    .controls { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .pill { padding: 5px 12px; border-radius: 99px; border: 0.5px solid var(--border2); background: var(--surface); color: var(--text2); font-family: 'Space Mono', monospace; font-size: 10px; cursor: pointer; transition: all 0.15s; }
+    .pill:hover { color: var(--text); border-color: var(--text); }
+    .pill.active { background: var(--marked); color: var(--bg); border-color: var(--marked); }
+    .divider { width: 1px; height: 18px; background: var(--border2); }
+    .win-bar { background: var(--surface2); border-radius: var(--radius); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; opacity: 0; transition: opacity 0.3s; border: 0.5px solid var(--border); }
+    .win-bar.visible { opacity: 1; }
+    .win-text { font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 700; color: var(--bingo); }
+    .win-sub { font-size: 10px; color: var(--text2); margin-top: 3px; }
+    .win-emoji { font-size: 24px; }
+    .stats-row { display: flex; justify-content: center; gap: 32px; margin-bottom: 1.25rem; }
+    .stat { text-align: center; }
+    .stat-num { font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 700; color: var(--text); }
+    .stat-label { font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+    .bingo-header { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 5px; }
+    .bingo-letter { font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 900; text-align: center; color: var(--text); padding: 4px 0; }
+    .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 1.25rem; }
+    .cell { aspect-ratio: 1; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--surface); display: flex; align-items: center; justify-content: center; text-align: center; padding: 5px; font-size: 8.5px; line-height: 1.3; color: var(--text); cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.1s; user-select: none; font-family: 'Space Mono', monospace; }
+    .cell:hover:not(.marked):not(.free) { background: var(--surface2); border-color: var(--text); }
+    .cell:active { transform: scale(0.92); }
+    .cell.marked { background: var(--marked); border-color: var(--marked); color: var(--bg); }
+    .cell.free { background: var(--marked); border-color: var(--marked); color: var(--bg); cursor: default; font-weight: 700; font-size: 10px; }
+    .cell.bingo-line { background: var(--bingo) !important; border-color: var(--bingo) !important; color: #fff !important; }
+    .cell.pop { animation: pop 0.18s ease; }
+    @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(0.85)} 100%{transform:scale(1)} }
+    .buttons { display: flex; gap: 8px; }
+    .btn { flex: 1; padding: 11px 16px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); font-family: 'Space Mono', monospace; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+    .btn:hover { background: var(--surface2); }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--marked); color: var(--bg); border-color: var(--marked); }
+    .btn-primary:hover { opacity: 0.85; }
+    @media (max-width: 420px) { .title { font-size: 16px; } .cell { font-size: 7.5px; } }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="top-bar">
+    <div>
+      <div class="title" id="main-title">КОРПОРАТИВНОЕ BINGO</div>
+      <div class="subtitle" id="main-sub">Митинг-эдишн · <a href="https://t.me/mustafin_tech" target="_blank">Мустафин.tech</a></div>
+    </div>
+    <div class="controls">
+      <button class="pill active" id="lang-ru" onclick="setLang('ru')">RU</button>
+      <button class="pill" id="lang-en" onclick="setLang('en')">EN</button>
+      <div class="divider"></div>
+      <button class="pill active" id="co-all" onclick="setCompany('all')">Universal</button>
+      <button class="pill" id="co-yandex" onclick="setCompany('yandex')">Яндекс</button>
+      <button class="pill" id="co-avito" onclick="setCompany('avito')">Авито</button>
+    </div>
+  </div>
+  <div class="win-bar" id="win-bar">
+    <div>
+      <div class="win-text" id="win-text">БИНГО!</div>
+      <div class="win-sub" id="win-sub">Можешь уходить с митинга</div>
+    </div>
+    <div class="win-emoji" id="win-emoji">🏆</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat"><div class="stat-num" id="marked-count">1</div><div class="stat-label" id="lbl-marked">отмечено</div></div>
+    <div class="stat"><div class="stat-num" id="bingo-count">0</div><div class="stat-label" id="lbl-bingo">бинго</div></div>
+  </div>
+  <div class="bingo-header">
+    <div class="bingo-letter">B</div><div class="bingo-letter">I</div><div class="bingo-letter">N</div><div class="bingo-letter">G</div><div class="bingo-letter">O</div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="buttons">
+    <button class="btn" id="clear-btn" onclick="clearCard()">Сбросить</button>
+    <button class="btn btn-primary" id="new-btn" onclick="newCard()">Новая карточка</button>
+  </div>
+</div>
+<script>
+const DATA = {
+  ru: {
+    all: ['Синхронизируемся','Давай запаркуем','В рамках парадигмы','Вынести в тред','Проактивно','Дать фидбек','Поставить на холд','По итогам встречи','Задетейлить','На одной волне','Стейкхолдеры','Переиспользовать','Скоупить','Финализировать','До конца дня','Лучшие практики','Роадмап','Оунер задачи','Это не мой OKR','Пингани меня','Синергия','Дедлайн вчера','Декомпозировать','Бэклог','Заапрувить','Алайнмент','Дать контекст','Посмотрим по ситуации','Не в скоупе','Офлайново решим','Надо обсудить','Итерация','Факап-митинг','Эскалировать','Это стратегическое','Онбординг','Созвон','Апдейт статуса','Взять в работу','Ключевой KPI','Точка роста','Внутренний клиент','Чек-ин','Нет ресурсов','Закрыть вопрос','Холистически','Низко висящий фрукт','Двигать иголку','Быстрая победа','По горизонтали','Нет пропускной способности','Взять ответственность','Спринт','Ретро','Приоритет №1','Держать в курсе','Поднять флаг','Зайти с другой стороны','Дать видимость','Форс-мажор'],
+    yandex: ['Яндекс-ДНК','Пуш в прод','А/Б тест','Метрика упала','Рост DAU','Ревью кода','Это в Аркадии','CI/CD сломался','Калибровка','Перформанс-ревью','Нулевая задержка','На стороне бека','Эксперимент незначимый','Монорепа','Деплой в пятницу','Сервис лёг','Новый грейд','Это технический долг','Чистый код','100% покрытие','Упало в проде','Фиче-флаг','Логи не читал','Внутренний хакатон','Поедем в офис?'],
+    avito: ['Buyer Experience','SEO просело','Конверсия в 0','Листинг лежит','Seller-сторона','Ценовой сигнал','CPA зашкалил','Трафик упал','Гипотеза не зашла','Когортный анализ','LTV считали?','Аномалия в данных','Фрод детект','Отток продавцов','Модерация тормозит','Промо не сработало','A/Б завершился','Retention упал','Карточка товара','Поиск не видит','Рекомендации сломаны','Антифрод сработал','Воронка сломалась','CPC вырос','Органика умерла', 'Трисигма', 'Раскатываем?', 'Гейт', 'СтирКо', 'ФинКонтроль', 'Сегментация', 'DWH', 'ИИ', 'Вайб']
+  },
+  en: {
+    all: ["Let's sync up",'Circle back','Park that thought','Move the needle','Low-hanging fruit','Bandwidth issues','Boil the ocean','Deep dive','At end of day','Deliverable','Stakeholders','Going forward','Leverage','Pain point','Value-add','Scalable solution','ROI-driven','Action items','Taking offline','Hard stop','Pivot','Ecosystem','Alignment meeting','30k foot view','Quick win','Best practice','Blue sky thinking','Disruptive','Data-driven','Agile process','Synergy','Table this','Unpack that','Swim lane','Core competency','Touch base','Drill down','Ballpark figure','Thought leader','Game changer','Boilerplate','Optics','Robust solution','Visibility','Capacity planning','Sprint review','Retrospective','Owner assigned','Due EOD','Blocker identified','Iterate fast','Ship it','Tech debt','Prioritize backlog','Stand-up call','Escalation path','Single source of truth','KPI dashboard','OKR check-in','Hard deadline'],
+    yandex: ['Yandex DNA','Push to prod','A/B test failed','Metrics dropped','Monorepo issue','Zero latency goal','Feature flag','Deploy on Friday','Service is down','Code review','Calibration round','Internal hackathon','Performance review','Cloud limit hit','On the backend','Experiment not significant','Clean code','Tech debt pile','100% coverage','Logs not checked','New grade achieved','Split the task','Beyond the quarter','Quality standard','Prod incident'],
+    avito: ['Buyer Experience','SEO dropped','Conversion hit zero','Listing is down','Seller side issue','Price signal off','CPA spiked','Traffic collapsed','Hypothesis failed','Cohort analysis','LTV calculated?','Data anomaly','Fraud detected','Seller churn','Moderation lag','Promo flopped','A/B concluded','Retention dropped','Product card bug','Search blind spot','Recs broken','Antifraud triggered','Funnel broken','CPC increased','Organic traffic dead']
+  }
+};
+const WIN = {
+  ru: [{text:'БИНГО!',sub:'Можешь уходить с митинга',emoji:'🏆'},{text:'БИНГО!',sub:'Созвон засчитан',emoji:'🎯'},{text:'БИНГО!',sub:'Синергия достигнута',emoji:'🔥'},{text:'БИНГО!',sub:'Ты в парадигме',emoji:'🎰'}],
+  en: [{text:'BINGO!',sub:'You can leave the meeting',emoji:'🏆'},{text:'BINGO!',sub:'Synergy achieved',emoji:'🎯'},{text:'BINGO!',sub:'KPI unlocked',emoji:'🔥'},{text:'BINGO!',sub:'Action item: celebrate',emoji:'🎰'}]
+};
+const UI = {
+  ru: {title:'КОРПОРАТИВНОЕ BINGO',sub:'Митинг-эдишн',marked:'отмечено',bingo:'бинго',clear:'Сбросить',newCard:'Новая карточка'},
+  en: {title:'CORPORATE BINGO',sub:'Meeting edition',marked:'marked',bingo:'bingo',clear:'Reset',newCard:'New card'}
+};
+let lang='ru', company='all', cards=[], marked=new Set(), bingoLines=new Set(), bingoCount=0;
+function getPhrases(){const b=[...DATA[lang].all];if(company!=='all')b.push(...DATA[lang][company]);return b;}
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function setLang(l){lang=l;['ru','en'].forEach(x=>document.getElementById('lang-'+x).classList.toggle('active',x===l));newCard();}
+function setCompany(c){company=c;['all','yandex','avito'].forEach(x=>document.getElementById('co-'+x).classList.toggle('active',x===c));newCard();}
+function updateUI(){const u=UI[lang];document.getElementById('main-title').textContent=u.title;document.getElementById('main-sub').innerHTML=u.sub+' · <a href="https://t.me/mustafin_tech" target="_blank">Мустафин.tech</a>';document.getElementById('lbl-marked').textContent=u.marked;document.getElementById('lbl-bingo').textContent=u.bingo;document.getElementById('clear-btn').textContent=u.clear;document.getElementById('new-btn').textContent=u.newCard;}
+function newCard(){const p=shuffle(getPhrases()).slice(0,24);p.splice(12,0,'FREE');cards=p;marked=new Set([12]);bingoLines=new Set();bingoCount=0;document.getElementById('win-bar').classList.remove('visible');updateUI();render();updateStats();}
+function clearCard(){marked=new Set([12]);bingoLines=new Set();bingoCount=0;document.getElementById('win-bar').classList.remove('visible');render();updateStats();}
+function getLines(){const l=[];for(let r=0;r<5;r++)l.push([r*5,r*5+1,r*5+2,r*5+3,r*5+4]);for(let c=0;c<5;c++)l.push([c,c+5,c+10,c+15,c+20]);l.push([0,6,12,18,24]);l.push([4,8,12,16,20]);return l;}
+function checkBingo(){const lines=getLines();let nb=false;lines.forEach((line,idx)=>{if(line.every(i=>marked.has(i))){if(!bingoLines.has(idx)){nb=true;bingoCount++;}bingoLines.add(idx);}});const hl=new Set();bingoLines.forEach(idx=>lines[idx].forEach(i=>hl.add(i)));document.querySelectorAll('.cell').forEach((el,i)=>el.classList.toggle('bingo-line',hl.has(i)));if(nb){const m=WIN[lang][Math.floor(Math.random()*WIN[lang].length)];document.getElementById('win-text').textContent=m.text;document.getElementById('win-sub').textContent=m.sub;document.getElementById('win-emoji').textContent=m.emoji;document.getElementById('win-bar').classList.add('visible');}}
+function updateStats(){document.getElementById('marked-count').textContent=marked.size;document.getElementById('bingo-count').textContent=bingoCount;}
+function render(){const grid=document.getElementById('grid');grid.innerHTML='';cards.forEach((phrase,i)=>{const isFree=phrase==='FREE';const cell=document.createElement('div');cell.className='cell'+(marked.has(i)?' marked':'')+(isFree?' free':'');cell.textContent=phrase;if(!isFree){cell.addEventListener('click',()=>{cell.classList.add('pop');setTimeout(()=>cell.classList.remove('pop'),200);marked.has(i)?marked.delete(i):marked.add(i);cell.classList.toggle('marked',marked.has(i));checkBingo();updateStats();});}grid.appendChild(cell);});checkBingo();}
+newCard();
+</script>
+</body>
+</html>
